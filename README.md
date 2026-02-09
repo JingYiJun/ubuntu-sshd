@@ -1,73 +1,58 @@
-[![Docker Image CI](https://github.com/aoudiamoncef/ubuntu-sshd/actions/workflows/ci.yml/badge.svg)](https://github.com/aoudiamoncef/ubuntu-sshd/actions/workflows/ci.yml)
-[![Docker Image Deployment](https://github.com/aoudiamoncef/ubuntu-sshd/actions/workflows/cd.yml/badge.svg)](https://github.com/aoudiamoncef/ubuntu-sshd/actions/workflows/cd.yml)
-[![Docker Pulls](https://img.shields.io/docker/pulls/aoudiamoncef/ubuntu-sshd.svg)](https://hub.docker.com/r/aoudiamoncef/ubuntu-sshd)
-[![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)](https://github.com/aoudiamoncef/ubuntu-sshd)
+[![CD](https://github.com/JingYiJun/ubuntu-sshd/actions/workflows/cd.yml/badge.svg)](https://github.com/JingYiJun/ubuntu-sshd/actions/workflows/cd.yml)
 
-This Docker image provides an Ubuntu 24.04 base with SSH server enabled. It allows you to easily create SSH-accessible containers via SSH keys or with a default username and password.
+# ubuntu-sshd
 
-## Usage
+基于 Ubuntu 的 SSH 服务器 Docker 镜像，支持 **Ubuntu 22.04** 和 **Ubuntu 24.04**。
 
-### Cloning the Repository
+- 仅允许 **root** 用户登录
+- 禁止密码登录，仅允许 **公钥认证**
+- 必须通过 `AUTHORIZED_KEYS` 环境变量提供公钥
 
-To get started, clone the GitHub [repository](https://github.com/aoudiamoncef/ubuntu-sshd) containing the Dockerfile and
-scripts:
+## 镜像地址
 
-```bash
-git clone https://github.com/aoudiamoncef/ubuntu-sshd
-cd ubuntu-sshd
+```
+ghcr.io/jingyijun/ubuntu-sshd:24.04   # Ubuntu 24.04 (latest)
+ghcr.io/jingyijun/ubuntu-sshd:22.04   # Ubuntu 22.04
+ghcr.io/jingyijun/ubuntu-sshd:latest  # 等同于 24.04
 ```
 
-### Building the Docker Image
-
-Build the Docker image from within the cloned repository directory:
-
-```bash
-docker build -t my-ubuntu-sshd:latest .
-```
-
-### Running a Container
-
-To run a container based on the image, use the following command:
+## 快速开始
 
 ```bash
 docker run -d \
-  -p host-port:22 \
-  -e SSH_USERNAME=myuser \
-  -e SSH_PASSWORD=mysecretpassword \
-  -e AUTHORIZED_KEYS="$(cat path/to/authorized_keys_file)" \
-  -e SSHD_CONFIG_ADDITIONAL="your_additional_config" \
-  -e SSHD_CONFIG_FILE="/path/to/your/sshd_config_file" \
-  my-ubuntu-sshd:latest
+  -p 2222:22 \
+  -e AUTHORIZED_KEYS="$(cat ~/.ssh/id_rsa.pub)" \
+  ghcr.io/jingyijun/ubuntu-sshd:latest
 ```
 
-- `-d` runs the container in detached mode.
-- `-p host-port:22` maps a host port to port 22 in the container. Replace `host-port` with your desired port.
-- `-e SSH_USERNAME=myuser` sets the SSH username in the container. Replace `myuser` with your desired username.
-- `-e SSH_PASSWORD=mysecretpassword` sets the SSH user's password in the container. **This environment variable is
-  required**. Replace `mysecretpassword` with your desired password.
-- `-e AUTHORIZED_KEYS="$(cat path/to/authorized_keys_file)"` sets authorized SSH keys in the container. Replace `path/to/authorized_keys_file` with the path to your authorized_keys file.
-- `-e SSHD_CONFIG_ADDITIONAL="your_additional_config"` allows you to pass additional SSHD configuration. Replace
-  `your_additional_config` with your desired configuration.
-- `-e SSHD_CONFIG_FILE="/path/to/your/sshd_config_file"` allows you to specify a file containing additional SSHD
-  configuration. Replace `/path/to/your/sshd_config_file` with the path to your configuration file.
-- `my-ubuntu-sshd:latest` should be replaced with your Docker image's name and tag.
-
-### SSH Access
-
-Once the container is running, you can SSH into it using the following command:
+然后通过 SSH 连接：
 
 ```bash
-ssh -p host-port myuser@localhost
+ssh -p 2222 root@localhost
 ```
 
-- `host-port` should match the port you specified when running the container.
-- Use the provided password or SSH key for authentication, depending on your configuration.
+## 环境变量
 
-### Note
+| 变量 | 必需 | 说明 |
+|---|---|---|
+| `AUTHORIZED_KEYS` | **是** | SSH 公钥内容（支持多个，每行一个） |
+| `SSHD_CONFIG_ADDITIONAL` | 否 | 追加到 sshd_config 的额外配置 |
+| `SSHD_CONFIG_FILE` | 否 | 包含额外 SSHD 配置的文件路径（需挂载） |
 
-- If the `AUTHORIZED_KEYS` environment variable is empty when starting the container, it will still launch the SSH server, but no authorized keys will be configured. You have to mount your own authorized keys file or manually configure the keys in the container.
-- If `AUTHORIZED_KEYS` is provided, password authentication will be disabled for enhanced security.
+## 本地构建
+
+```bash
+# 构建 Ubuntu 24.04 版本（默认）
+docker build -t ubuntu-sshd:24.04 .
+
+# 构建 Ubuntu 22.04 版本
+docker build -t ubuntu-sshd:22.04 --build-arg UBUNTU_VERSION=22.04 .
+```
+
+## 多架构支持
+
+CI/CD 流程会为 `linux/amd64` 和 `linux/arm64` 两种架构构建镜像。
 
 ## License
 
-This Docker image is provided under the [MIT License](LICENSE).
+[MIT License](LICENSE)

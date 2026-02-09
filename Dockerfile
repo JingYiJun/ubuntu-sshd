@@ -1,32 +1,25 @@
-# Use an official Ubuntu base image
-FROM ubuntu:24.04
+ARG UBUNTU_VERSION=24.04
+FROM ubuntu:${UBUNTU_VERSION}
 
-# Set environment variables to avoid interactive prompts during installation
 ENV DEBIAN_FRONTEND=noninteractive
-ENV SSH_USERNAME="ubuntu"
-ENV SSHD_CONFIG_ADDITIONAL=""
 
-# Install OpenSSH server, clean up, create directories, set permissions, and configure SSH
+# Install OpenSSH server and basic network tools
 RUN apt-get update \
-    && apt-get install -y iproute2 iputils-ping openssh-server telnet \
+    && apt-get install -y openssh-server iproute2 iputils-ping \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
-    && mkdir -p /run/sshd \
-    && chmod 755 /run/sshd \
-    && if ! id -u "$SSH_USERNAME" > /dev/null 2>&1; then useradd -ms /bin/bash "$SSH_USERNAME"; fi \
-    && chown -R "$SSH_USERNAME":"$SSH_USERNAME" /home/"$SSH_USERNAME" \
-    && chmod 755 /home/"$SSH_USERNAME" \
-    && mkdir -p /home/"$SSH_USERNAME"/.ssh \
-    && chown "$SSH_USERNAME":"$SSH_USERNAME" /home/"$SSH_USERNAME"/.ssh \
-    && echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config \
-    && echo "PermitRootLogin no" >> /etc/ssh/sshd_config
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Copy the script to configure the user's password and authorized keys
-COPY configure-ssh-user.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/configure-ssh-user.sh
+# Configure SSH: root only, pubkey only, no password
+RUN mkdir -p /run/sshd /root/.ssh \
+    && chmod 700 /root/.ssh \
+    && sed -i 's/^#*PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config \
+    && sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config \
+    && sed -i 's/^#*PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config \
+    && sed -i 's/^#*PermitEmptyPasswords.*/PermitEmptyPasswords no/' /etc/ssh/sshd_config
 
-# Expose SSH port
+COPY configure-ssh.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/configure-ssh.sh
+
 EXPOSE 22
 
-# Start SSH server
-CMD ["/usr/local/bin/configure-ssh-user.sh"]
+CMD ["/usr/local/bin/configure-ssh.sh"]
