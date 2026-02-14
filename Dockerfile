@@ -5,7 +5,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Install OpenSSH server and basic network tools
 RUN apt-get update \
-    && apt-get install -y openssh-server iproute2 iputils-ping \
+    && apt-get install -y openssh-server iproute2 iputils-ping nano vim net-tools bash-completion htop git zsh tmux curl wget tree less sudo build-essential \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
